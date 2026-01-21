@@ -1,7 +1,8 @@
 from django.shortcuts import render, get_object_or_404
 from .models import Post, Comment
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
-from .forms import EmailPostForm, CommentForm
+from .forms import EmailPostForm, CommentForm, SearchForm
+
 from django.core.mail import send_mail
 from django.views.generic import ListView
 from django.views.decorators.http import require_POST
@@ -79,7 +80,6 @@ def post_detail(request, year, month, day, post):
     form = CommentForm() # пустая форма для нового комментария
 
 
-
     # ============================================
     # ЛОГИКА ПОХОЖИХ ПОСТОВ (по общим тегам)
     # ============================================
@@ -143,7 +143,7 @@ def post_detail(request, year, month, day, post):
     #     Если количество тегов одинаковое, показываем более новые посты
     # Зачем: сначала показываем посты с большим количеством тегов (более похожие),
     # если количество одинаковое - показываем более новые
-    # Результат: отсортированный список похожих постов (самые похожие первыми)
+    #image.pn Результат: отсортированный список похожих постов (самые похожие первыми)
     # Пример сортировки:
     #   Пост A: same_tags=5, publish=2025-01-13 → первый
     #   Пост B: same_tags=5, publish=2025-01-10 → второй (такое же количество, но старше)
@@ -252,6 +252,8 @@ def post_share(request, post_id):
 
 
 
+
+
 @require_POST # Только POST-запросы (безопастность)
 def post_comment(request, post_id):
     post = get_object_or_404(       # получаем пост
@@ -274,5 +276,101 @@ def post_comment(request, post_id):
         'form': form, 
         'comment': comment}
     )
+
+
+
+from django.contrib.postgres.search import SearchVector, SearchQuery, SearchRank
+# SearchVector - создаёт поисковой вектор из полей (объединяет текст для поиска)
+# SearchQuery - преобразует запрос пользователя в поисковый запрос PostgresSQL 
+# SearchRank - вычисляет релевантность (насколько результат соответствует запросу)
+
+
+
+def post_search(request):
+    form = SearchForm()  # Пустая форма (когда пользователь ещё не искал)
+    query = None         # Запрос пользователя (пока None)
+    results = []         # Результат поиска (пока пустой список)
+
+# Зачем: готовим переменные для двух сценариев:
+# Пользователь только открыл страницу поиска (форма пустая)
+# Пользователь уже отправил запрос (есть результаты)
+
+
+
+
+# Проверка был ли запрос отправлен
+# Как работает?
+
+# request.GET - параметры из IRL (например: ?query=django)
+
+# form = SearchForm(request.GET) - создаём форму с данными из URL
+
+# from.is_valid() - проверям что данные корректны
+
+# from.cleaned_data['query'] - получаем очищенную строку поиска
+
+# Пример URL: http://127.0.0.1.8000/search/?query=django
+
+    if 'query' in request.GET:
+        form = SearchForm(request.GET)
+        if form.is_valid():
+            query = form.cleaned_data['query']
+
+
+
+# Что происходит?
+# SearchVector('title', 'body'): 
+
+# Объединяет поля 'title' и 'body' в один поисковый вектор 
+# PostgreSQL индексирует этот текст для быстрого поиска
+# Аналог: "создай один больной тест из заголовка и содержимого"
+
+
+# SearchQuery(query):
+# 
+# Преобразует запрос пользователя в формат PostgreSQL
+# Обрабытвает специальные операторы (AND, ORM NOT)
+# Пример: SearchQuery('django AND python') найдёт посты, есть оба слова
+
+            search_vector = SearchVector('title', 'body')
+            search_query = SearchQuery(query)
+
+
+# Post.published - ну очедно что берём публичные посты - QuerySet
+
+# .annotate(search=search_vector):
+# Добавляет временное поле search к каддому посту
+# Это поле содержит объединённый текст из title и body.
+
+# .annotate(rank=SearchRank()):
+# Добавляет поле rank (релевантность от 0 до 1)
+# Чем выше rank, тем больше совпадений с запросом
+
+# .filter(search-search_query):
+# Оставляет только посты, где search соответствует search_query
+# Это и есть сам поиск
+# 
+# .order_by('-rank'):
+# Сортирует по убыванию релевантности
+# Самые релевантные посты - первыми
+# .
+
+            results = Post.published.annotate(
+                search=search_vector,
+                rank=SearchRank(search_vector, search_query)
+            ).filter(search=search_query).order_by('-rank')
+
+
+
+# рендерим результат
+    return render(
+        request,
+        'blog/post/search.html',
+        {'form': form,
+        'query': query,
+        'results': results}
+    )
+
+
 
 

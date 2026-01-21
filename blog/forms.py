@@ -13,4 +13,6 @@ class CommentForm(forms.ModelForm):                   # ModelFrom - форма �
             fields = ['name', 'email', 'body']            # какие поля включить
 
 
+class SearchForm(forms.Form):
+    query = forms.CharField(max_length=64)
 
