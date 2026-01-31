@@ -336,8 +336,6 @@ def post_search(request):
             search_query = SearchQuery(query)
 
 
-# Post.published - ну очедно что берём публичные посты - QuerySet
-
 # .annotate(search=search_vector):
 # Добавляет временное поле search к каддому посту
 # Это поле содержит объединённый текст из title и body.
