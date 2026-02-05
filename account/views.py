@@ -57,6 +57,7 @@ def register(request):
             new_user.set_password(user_form.cleaned_data['password'])
             new_user.save()
             Profile.objects.create(user=new_user)
+            messages.success(request, 'Registration completed successfully')
             return render(
                 request,
                 'account/register_done.html',
@@ -111,4 +112,3 @@ def edit(request):
             'profile_form': profile_form
         }
     )
-
