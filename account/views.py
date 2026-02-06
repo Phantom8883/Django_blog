@@ -1,11 +1,10 @@
 from django.shortcuts import render, redirect
 from django.http import HttpResponse
 from django.contrib.auth import authenticate, login
-from django.contrib import messages
 from .forms import LoginForm, UserRegistrationForm, UserEditForm, ProfileEditForm
 from .models import Profile
 from django.contrib.auth.decorators import login_required
-
+from django.contrib import messages
 
 
 
@@ -46,6 +45,9 @@ def dashboard(request):
         {'section': 'dashboard'}
     )
 
+
+
+@login_required
 def register(request):
     if request.method == 'POST':
         user_form = UserRegistrationForm(request.POST)
@@ -57,6 +59,7 @@ def register(request):
             new_user.set_password(user_form.cleaned_data['password'])
             new_user.save()
             Profile.objects.create(user=new_user)
+            messages.success(request, 'Registration completed successfully')
             return render(
                 request,
                 'account/register_done.html',
@@ -98,10 +101,11 @@ def edit(request):
             messages.success(request, 'Profile updated successfully')
             # Редирект на dashboard после сохранения
             return redirect('account:dashboard')
-
+        else:
+            messages.error(request, 'Error updating your profile')
     else:
         user_form = UserEditForm(instance=request.user)
-        profile_form = ProfileEditForm(instance=profile)
+        profile_form = ProfileEditForm(instance=request.user.profile)
 
     return render(
         request,

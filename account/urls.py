@@ -7,7 +7,7 @@ app_name = 'account'
 urlpatterns = [
 
     # Встроенные URL-адреса Django для аутентификации
-    path('', include('django.contrib.auth.urls')),
+    path('', include('django.contrib.auth.urls')), # АВТОМатичски добавляет все пути: login/ logout/ password reset/change 
     
     path('', views.dashboard, name='dashboard'),
 
