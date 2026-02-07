@@ -60,4 +60,3 @@ class ProfileEditForm(forms.ModelForm):
         fields = ['date_of_birth', 'photo']
 
 
-
