@@ -1,0 +1,95 @@
+{% load blog_tags %}
+{% load static %}
+<!DOCTYPE html>
+<html>
+<head>
+    <title>{% block title %}{% endblock %}</title>
+    <link href="{% static 'css/blog.css' %}" rel="stylesheet">
+</head>
+<body>
+    {# ============================================ #}
+    {# БЛОК АУТЕНТИФИКАЦИИ #}
+    {# ============================================ #}
+    <div id="auth-links" style="margin: 10px 0; padding: 10px; background: #f0f0f0; border-bottom: 1px solid #ccc;">
+        {% if user.is_authenticated %}
+            <p style="margin: 0; display: inline;">
+                Привет, <strong>{{ user.username }}</strong>! 
+            </p>
+            <span style="margin: 0 10px;">|</span>
+            <a href="{% url 'account:dashboard' %}">Dashboard</a>
+            <span style="margin: 0 10px;">|</span>
+            <a href="{% url 'account:logout' %}">Выйти</a>
+        {% else %}
+            <a href="{% url 'account:login' %}">Войти</a>
+            <span style="margin: 0 10px;">|</span>
+            <a href="{% url 'account:register' %}">Регистрация</a>
+        {% endif %}
+    </div>
+
+    {# ============================================ #}
+    {# БЛОК СООБЩЕНИЙ (Messages Framework) #}
+    {# ============================================ #}
+    {% if messages %}
+        <ul class="messages" style="list-style: none; padding: 0; margin: 10px 0;">
+            {% for message in messages %}
+                <li class="{{ message.tags }}" style="padding: 10px; margin: 5px 0; border-radius: 4px;">
+                    {{ message|safe }}
+                </li>
+            {% endfor %}
+        </ul>
+        <style>
+            .messages .error, .messages .danger {
+                background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb;
+            }
+            .messages .success {
+                background: #d4edda; color: #155724; border: 1px solid #c3e6cb;
+            }
+            .messages .warning {
+                background: #fff3cd; color: #856404; border: 1px solid #ffeeba;
+            }
+            .messages .info {
+                background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb;
+            }
+            .messages li:not(.error):not(.danger):not(.success):not(.warning):not(.info) {
+                background: #e0e0e0; color: #333; border: 1px solid #ccc;
+            }
+        </style>
+    {% endif %}
+
+    <div id="content">
+        {% block content %}
+        {% endblock %}
+    </div>
+    <div id="sidebar">
+        <h2>My blog</h2>
+        <p>
+            This is my blog.
+            I've written {% my_tag %} posts so far.
+        </p>
+        
+        {# ============================================ #}
+        {# ССЫЛКА НА RSS ЛЕНТУ #}
+        {# ============================================ #}
+        {# Позволяет пользователям подписаться на блог #}
+        {# При клике открывается XML-файл RSS формата  #}
+        <p>
+            <a href="{% url 'blog:post_feed' %}">
+                Subscribe to my RSS feed
+            </a>
+        </p>
+        
+        <h3>Latest posts</h3>
+        {% show_latest_posts 3 %}
+        
+        <h3>Most commented posts</h3>
+        {% get_most_commented_posts as most_commented_posts %}
+        <ul>
+            {% for post in most_commented_posts %}
+            <li> 
+                <a href="{{ post.get_absolute_url }}">{{ post.title }}</a>
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+</body>
+</html>
