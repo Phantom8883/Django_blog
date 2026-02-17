@@ -14,7 +14,8 @@ class Image(models.Model):
     url = models.URLField(max_length=2000)
     image = models.ImageField(upload_to='images/%Y/%m/%d')
     description = models.TextField(blank=True)
-    users_like = models.ManyToManyField(
+
+    users_like = models.ManyToManyField( # поле, которое хранит всех пользователей, которым понравилось изображение
         settings.AUTH_USER_MODEL,
         related_name='images_liked',
         blank=True
